@@ -1,0 +1,32 @@
+{
+    "logger": {
+        "directory": "logs",
+        "level": "INFO"
+    },
+    "scraper": {
+        "search_url": "https://www.carbrand.com/en-gb/search/cars?model=goodmodel&order=price_asc",
+        "url_prefix": "https://www.carbrand.com",
+        "user_agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "user_agents": ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"],
+        "request_timeout": 30,
+        "random_delays": true
+    },
+    "database": {
+        "path": "data/cars.json"
+    },
+    "options": {
+        "bose": "bose",
+        "burmester": "burmester",
+        "sport_chrono": "sport chrono",
+        "air_suspension": "air suspension",
+        "pano_roof": "panoramic",
+        "park_assist": "parkassist",
+        "acc": "adaptive cruise",
+        "hud": "head-up",
+        "perf_battery": "performance battery",
+        "matrix": "led matrix",
+        "leds": "led main"
+  }
+}
