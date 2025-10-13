@@ -1,8 +1,5 @@
 import sys
 from pathlib import Path
-#project_root = Path(__file__).parent.parent
-#sys.path.insert(0, str(project_root))  # config.py
-#sys.path.insert(0, str(project_root / 'src'))  # src modules
 from config import Config
 import src.logger as logger
 import src.scraper as scraper
