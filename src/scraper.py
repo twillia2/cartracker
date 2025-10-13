@@ -5,7 +5,7 @@ import time
 import json
 import logging
 import re
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from bs4 import BeautifulSoup
 from pathlib import Path
 project_root = Path(__file__).parent.parent
@@ -37,25 +37,47 @@ def random_sleep():
         log.info(f'scraper::random_sleep: sleeping random [{delay}] seconds')
         time.sleep(delay)
     else:
-        log.info(f'scraper::random_sleep: sleeping default [15] seconds')
-        time.sleep(15)
+        log.info(f'scraper::random_sleep: sleeping default [3] seconds')
+        time.sleep(3)
     return
 
+# extra debug logging in here cos it's been flaky
 def has_more_pages(soup, current_url):
-    pagination_dots = soup.find('span', class_=PAGINATION_CLASS)
-    if pagination_dots:
+    current_page = get_current_page_number(current_url)
+    highest_visible_page = get_highest_visible_page(soup)
+    
+    log.debug(f"scraper::has_more_pages: Current page: {current_page}, highest visible: {highest_visible_page}")
+    
+    # if current page < highest visible we've definitely got more pages
+    if current_page < highest_visible_page:
+        log.debug(f"scraper::has_more_pages: Current page ({current_page}) < highest visible ({highest_visible_page}) return [True]")
         return True
     
-    # if there's no '...' visible then we're at the end of the pages
-    # but may not be currently on the last one
-    current_page = get_current_page_number(current_url)
-    highest_visible_page = get_highest_available_page(soup)
+    # if current page >= highest check the pagination dots position
+    pagination_dots = soup.find('span', class_=PAGINATION_CLASS)
     
-    log.debug(f"scraper::has_more_pages: No '...' found current page: {current_page}, highest visible: {highest_visible_page}")
-    # if current page is not the highest visible in the pagination bar, there are more pages
-    return current_page < highest_visible_page
+    if not pagination_dots:
+        log.debug("scraper::has_more_pages: No '...', current >= highest return [False]")
+        return False
+    
+    # Dots exist - check if they're AFTER the highest visible number
+    pagination_container = soup.find('nav', attrs={'aria-label': 'Pagination'})
+    if not pagination_container:
+        pagination_container = pagination_dots.parent
+    
+    highest_element_html = str(pagination_container)
+    
+    dots_index = highest_element_html.index(str(pagination_dots))
+    highest_num_index = highest_element_html.rfind(str(highest_visible_page))
+    
+    if dots_index > highest_num_index:
+        log.debug("scraper::has_more_pages: '...' is after highest visible page return [True]")
+        return True
+    else:
+        log.debug("scraper::has_more_pages: '...' is before highest visible page return [False]")
+        return False
 
-def get_highest_available_page(soup):
+def get_highest_visible_page(soup):
     pagination_links = soup.find_all('a', attrs={'aria-label': re.compile("^Page")})
     
     highest = 0
@@ -86,18 +108,44 @@ def get_current_page_number(current_url):
         log.debug("scraper::get_current_page_number: Could not parse page number from URL, assuming page 1")
         return 1
 
+def infer_next_page(current_url, next_page):
+    parsed = urlparse(current_url)
+    params = parse_qs(parsed.query)
+    
+    # Update page parameter
+    params['page'] = [str(next_page)]
+    
+    # Reconstruct query string (parse_qs returns lists, urlencode expects them)
+    new_query = urlencode(params, doseq=True)
+    
+    # Rebuild URL
+    new_url = urlunparse((
+        parsed.scheme,
+        parsed.netloc,
+        parsed.path,
+        parsed.params,
+        new_query,
+        parsed.fragment
+    ))
+
+    log.debug(f"scraper::infer_next_page: built url [{new_url}]")
+    return new_url
+
 def get_next_page_url(soup, current_url):
     current_page = get_current_page_number(current_url)
     next_page = current_page + 1
     
     log.debug(f"scraper::get_next_page_url: Current page: {current_page}, looking for page {next_page}")
     
-    # find all pagination links
-    pagination_links = soup.find_all('a', attrs={'aria-label': re.compile("^Page")})
+    # find pagination link for next page
+    page_n = "Page " + str(next_page)
+    #pagination_links = soup.find_all('a', attrs={'aria-label': re.compile("^Page")})
+    pagination_links = soup.find_all('a', attrs={'aria-label': page_n})
     
     if not pagination_links:
-        log.debug("scraper::get_next_page_url: No pagination links found")
-        return None
+        log.debug("scraper::get_next_page_url: No pagination link found. Trying to infer page")
+        # we know we've got more pages by the time we get here so try adding a 1 to the current page number
+        return infer_next_page(current_url, next_page)
     
     # Look for the next page link by text content
     for link in pagination_links:
