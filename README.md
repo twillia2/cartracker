@@ -24,7 +24,7 @@ Maintains a simple tinydb database of listings for price tracking (not yet imple
         "random_delays": true
     },
     "database": {
-        "path": "data/taycans.json"
+        "path": "data/cars.json"
     },
     "options": {
         "bose": "bose",
@@ -35,3 +35,4 @@ Maintains a simple tinydb database of listings for price tracking (not yet imple
   }
 }
 ```
+
