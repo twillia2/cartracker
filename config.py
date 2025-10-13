@@ -26,6 +26,10 @@ class Config:
         return self._config['logger']['level']
     
     @property
+    def log_stderr(self) -> bool:
+        return self._config['logger']['stderr']
+    
+    @property
     def search_url(self):
         return self._config['scraper']['search_url']
     

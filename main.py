@@ -12,7 +12,8 @@ def run():
     #logger
     log_dir = config.log_dir
     log_level = config.log_level
-    log = logger.setup_logger('cartracker', log_dir, log_level)
+    log_stderr = config.log_stderr
+    log = logger.setup_logger('cartracker', log_dir, log_level, log_stderr)
 
     #database
     db = CarDB(config.db_path)
