@@ -29,8 +29,7 @@ def run():
             log.info(f'main::run: New listing! VIN [{car['vin']}] price [{car['current_price']}] dealer [{car['dealer']}]')
         
         elif result.value == UpdateResult.PRICE_CHANGE.value:
-            log.info(f'main::run: Price change. VIN [{car['vin']}] price [{car['current_price']}] \
-                     price history [{car['price_histroy']}] dealer [{car['dealer']}]')
+            log.info(f'main::run: Price change. VIN [{car['vin']}] price [{car['current_price']}] price history [{car['price_history']}] dealer [{car['dealer']}]')
 
     log.info(f'main::run(): "Found [{count}] cars today. Finished"')
     sys.exit(0)
