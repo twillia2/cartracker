@@ -50,7 +50,7 @@ def create_car_record(car_data: json):
         'interior_color': car_data.get('vehicleInteriorColor'),
         'previous_owners': car_data.get('numberOfPreviousOwners'),
         'current_price': extract_price(car_data),
-        'url': config.url_prefix + car_data.get('offers',{}).get('url'),
+        'url': car_data.get('offers',{}).get('url'),
         'my': my,
         'first_reg': registration_date,
 

@@ -245,7 +245,7 @@ def get_listings(start_url, db):
             response.raise_for_status()
         
             soup = BeautifulSoup(response.content, 'html.parser')
-            log.debug(f'scraper::get_listings: response')
+            log.debug(f'scraper::get_listings: response from url {current_url}')
 
             cars_on_page = get_cars_on_page(soup, db)
             log.info(f'scraper::get_listings: Got [{len(cars_on_page)}] cars from page [{page_count}]')
@@ -281,7 +281,7 @@ def process_listing_details(car_data: json, db: CarDB):
     log.debug(f'scraper::process_listing_details: entry. car_data [{car_data}]')
     # get the url of the actual listing
     try:            
-        car_url = config.url_prefix + car_data["offers"]["url"]
+        car_url = check_url(car_data["offers"]["url"])
     except KeyError:
         print(f'scraper::process_listing_details: KeyError getting url for [{car_data['vehicleIdentificationNumber']}]')
 
@@ -300,6 +300,7 @@ def process_listing_details(car_data: json, db: CarDB):
     if current_price == last_price:
             # update last seen and skip this car
             car_data['last_seen'] = datetime.now().isoformat()
+            log.info(f'scraper::process_listing_details: unchanged car at url [{car_url}] skipping')
     else:
         # get the full listing
         HEADERS = {
@@ -311,7 +312,7 @@ def process_listing_details(car_data: json, db: CarDB):
         response.raise_for_status()
         
         soup = BeautifulSoup(response.content, 'html.parser')
-        log.debug(f'scraper::process_listing_details: got response []')
+        log.debug(f'scraper::process_listing_details: new or changed car: got response from url [{car_url}]')
 
         eh = soup.find('div', class_=EQUIPMENT_HIGHLIGHTS_CLASS)
         option_highlights = []
