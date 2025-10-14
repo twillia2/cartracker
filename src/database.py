@@ -48,6 +48,10 @@ class CarDB:
         Car = Query()
         return self.cars.get(Car.vin == vin)
     
+    def get_by_url(self, url):
+        Car = Query()
+        return self.cars.get(Car.url == url)
+    
     def search_by_option(self, option_name):
         #find  specific option (case-insensitive partial match)
         Car = Query()

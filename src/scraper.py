@@ -5,6 +5,7 @@ import time
 import json
 import logging
 import re
+from datetime import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from bs4 import BeautifulSoup
 from pathlib import Path
@@ -14,6 +15,8 @@ sys.path.insert(0, str(project_root / 'src'))  # src modules
 from config import config
 import src.utils as utils
 import src.car as car
+from src.database import CarDB
+from src.reason import UpdateResult
 
 log = logging.getLogger('cartracker')
 
@@ -119,7 +122,7 @@ def get_next_hidden_page(soup) -> tuple[int, str]:
         next_page_elem = arrow[-1].find('a')
         if next_page_elem.text == "Next Page":
             try:
-                next_url = next_page_elem['href']
+                next_url = check_url(next_page_elem['href'])
                 ret = get_page_number_from_url(next_url)
                 log.debug(f"scraper::get_highest_hidden_page: Highest hidden page number: {ret} ")
                 return ret, next_url
@@ -142,6 +145,22 @@ def get_page_number_from_url(url: str):
     except (ValueError, IndexError):
         log.debug("scraper::get_page_number_from_url: Could not parse page number from URL, assuming page 1")
         return 1
+
+def strip_query_params(url):
+    parsed = urlparse(url)
+    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, '', '', ''))
+
+def check_url(url: str) -> str:
+    url_pattern = re.compile(f"^{config.url_prefix}")
+    if url_pattern.search(url):
+        # probably valid if it starts with our base/prefix url
+        log.debug(f'scraper::check_url: url [{url}] looks valid')
+        return url
+    else:
+        log.debug(f'scraper::check_url: url [{url}] looks invalid appending prefix [{config.url_prefix}]')
+        # else we'd better append our prefix
+        url = config.url_prefix + url
+        return url
 
 # unused but might be useful if they change something
 def infer_next_page(current_url, next_page):
@@ -167,7 +186,7 @@ def infer_next_page(current_url, next_page):
     log.debug(f"scraper::infer_next_page: built url [{new_url}]")
     return new_url
 
-def get_cars_on_page(soup):
+def get_cars_on_page(soup, db):
     cars = []
 
     container = soup.find('div', attrs={'data-testid': 'searchlist-container'})
@@ -178,14 +197,15 @@ def get_cars_on_page(soup):
     
     for listing in listings:
         car_json = listing.find('script', type='application/ld+json')
-        random_sleep()
-        
+
         if car_json:
             car_data = json.loads(car_json.string)
-            c = process_listing_details(car_data)
+            c = process_listing_details(car_data, db)
             # create our internal view of the car
             internal_car = car.create_car_record(c)
             cars.append(internal_car)
+
+            write_car_to_db(internal_car, db)
             #testing only
             #COUNT += 1
             #if COUNT >= LIMIT:
@@ -193,7 +213,17 @@ def get_cars_on_page(soup):
 
     return cars
 
-def get_listings(start_url):
+def write_car_to_db(internal_car: car, db: CarDB):
+    log.debug("scraper::write_car_to_db")
+    _, result = db.update_car(internal_car)
+    if result.value == UpdateResult.NEW_LISTING.value:
+        log.info(f'main::run: New listing! VIN [{internal_car['vin']}] price [{internal_car['current_price']}] dealer [{internal_car['dealer']}]')
+        
+    elif result.value == UpdateResult.PRICE_CHANGE.value:
+        log.info(f'main::run: Price change. VIN [{internal_car['vin']}] price [{internal_car['current_price']}] price history [{internal_car['price_history']}] dealer [{internal_car['dealer']}]')
+            
+
+def get_listings(start_url, db):
     HEADERS = {
         'User-Agent': random.choice(config.user_agents)
     }
@@ -208,7 +238,6 @@ def get_listings(start_url):
 
     while current_url:
         page_count += 1
-        random_sleep()
         log.info(f'scraper::get_listings: Fetching page [{page_count}] current_url [{current_url}]')
 
         try:
@@ -218,7 +247,7 @@ def get_listings(start_url):
             soup = BeautifulSoup(response.content, 'html.parser')
             log.debug(f'scraper::get_listings: response')
 
-            cars_on_page = get_cars_on_page(soup)
+            cars_on_page = get_cars_on_page(soup, db)
             log.info(f'scraper::get_listings: Got [{len(cars_on_page)}] cars from page [{page_count}]')
             
             all_cars.extend(cars_on_page)
@@ -233,6 +262,7 @@ def get_listings(start_url):
             if next_url:
                 log.debug(f'scraper::get_listings: current_url [{current_url}] = next_url [{next_url}]')
                 current_url = next_url
+                random_sleep()
             else:
                 log.error(f'scraper::get_listings: Failed to get next_url, stopping reads')
                 break
@@ -247,32 +277,50 @@ def get_listings(start_url):
 
     return all_cars
 
-def process_listing_details(car_data: json):
-    HEADERS = {
-        'User-Agent': config.user_agent
-    }
-    
+def process_listing_details(car_data: json, db: CarDB):
     log.debug(f'scraper::process_listing_details: entry. car_data [{car_data}]')
     # get the url of the actual listing
     try:            
-        car_url = car_data["offers"]["url"]
+        car_url = config.url_prefix + car_data["offers"]["url"]
     except KeyError:
         print(f'scraper::process_listing_details: KeyError getting url for [{car_data['vehicleIdentificationNumber']}]')
 
-    response = requests.get(config.url_prefix + car_url, headers=HEADERS, timeout=config.request_timeout)
-    response.raise_for_status()
-    
-    soup = BeautifulSoup(response.content, 'html.parser')
-    log.debug(f'scraper::process_listing_details: got response []')
+    # use the url to see if we already know this car
+    # the listing url _should_ be unique (and stored)
+    # unfortunately we don't have the vin at this point but 
+    # we can avoid scraping the details page again if the car is 
+    # known. if it is known but the price has changed we can re-scrape
+    current_price = car_data["offers"]["price"]
+    last_price = -1
+    # we do need to strip the query params first though
+    car_url = strip_query_params(car_url)
+    existing_car = db.get_by_url(car_url)
+    if existing_car is not None:
+        last_price = existing_car['price_history'][-1]['price']
+    if current_price == last_price:
+            # update last seen and skip this car
+            car_data['last_seen'] = datetime.now().isoformat()
+    else:
+        # get the full listing
+        HEADERS = {
+            'User-Agent': config.user_agent
+        }
 
-    eh = soup.find('div', class_=EQUIPMENT_HIGHLIGHTS_CLASS)
-    option_highlights = []
-    for c in eh.children:
-        option_highlights.append(c.text)
+        random_sleep()
+        response = requests.get(car_url, headers=HEADERS, timeout=config.request_timeout)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        log.debug(f'scraper::process_listing_details: got response []')
 
-    car_data['raw_options'] = option_highlights
+        eh = soup.find('div', class_=EQUIPMENT_HIGHLIGHTS_CLASS)
+        option_highlights = []
+        for c in eh.children:
+            option_highlights.append(c.text)
 
-    car_data['internal_options'] = car.parse_highlights(option_highlights)
+        car_data['raw_options'] = option_highlights
+        car_data['internal_options'] = car.parse_highlights(option_highlights)
+        car_data['offers']['url'] = car_url
 
     return car_data
 
