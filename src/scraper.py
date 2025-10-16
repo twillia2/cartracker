@@ -91,10 +91,10 @@ def has_more_pages(soup, current_url) -> tuple [bool, str]:
         return True, next_url
     elif current_page == highest_visible_page and next_hidden_page < 0:
         log.debug(f"scraper::has_more_pages: current_page [{current_page}] == highest_visible_page [{highest_visible_page}] and next_hidden_page [{next_hidden_page}] < 0 return [False]")
-        return False
+        return False, None
     else:
         log.warning(f"scraper::has_more_pages: Unexpected! current_page [{current_page}] highest_visible_page [{highest_visible_page}] next_hidden_page [{next_hidden_page}] return [False]")
-        return False
+        return False, None
 
 def get_highest_visible_page(soup):
     pagination_links = soup.find_all('a', attrs={'aria-label': re.compile("^Page")})
@@ -127,9 +127,9 @@ def get_next_hidden_page(soup) -> tuple[int, str]:
                 log.debug(f"scraper::get_highest_hidden_page: Highest hidden page number: {ret} ")
                 return ret, next_url
             except (ValueError, IndexError):
-                return -1
+                return -1, None
     
-    return -1
+    return -1, None
 
 def get_page_number_from_url(url: str):
     try:
@@ -220,7 +220,7 @@ def write_car_to_db(internal_car: car, db: CarDB):
         log.info(f'main::run: New listing! VIN [{internal_car['vin']}] price [{internal_car['current_price']}] dealer [{internal_car['dealer']}]')
         
     elif result.value == UpdateResult.PRICE_CHANGE.value:
-        log.info(f'main::run: Price change. VIN [{internal_car['vin']}] price [{internal_car['current_price']}] price history [{internal_car['price_history']}] dealer [{internal_car['dealer']}]')
+        log.info(f'main::run: Price change! VIN [{internal_car['vin']}] price [{internal_car['current_price']}] price history [{utils.log_price_history(internal_car['price_history'])}] dealer [{internal_car['dealer']}]')
             
 
 def get_listings(start_url, db):
@@ -253,11 +253,9 @@ def get_listings(start_url, db):
             all_cars.extend(cars_on_page)
 
             more_pages, next_url = has_more_pages(soup, current_url)
+            log.info(f'scraper::get_listings: more_pages [{more_pages}]')
             if not more_pages:
-                log.info(f'scraper::get_listings: more_pages [{more_pages}]')
                 break
-            else:
-                log.info(f'scraper::get_listings: more_pages [{more_pages}]')
 
             if next_url:
                 log.debug(f'scraper::get_listings: current_url [{current_url}] = next_url [{next_url}]')

@@ -1,4 +1,5 @@
 import random
+import json
 
 def random_delay() -> float:
     # 70% chance of normal delay (7-10 seconds)
@@ -14,3 +15,16 @@ def random_delay() -> float:
         delay = random.uniform(4.0, 6.0)
     
     return delay
+
+def log_price_history(price_history: json):
+    ret = "price_history:"
+    # remove dealer from the price change logging
+    # because it's too verbose
+    for record in price_history:
+        ret += " "
+        if 'price' in record:
+            ret += f"price: [{record['price']}]"
+        if 'date' in record:
+            ret += f" at [{record['date']}]"
+    
+    return ret
