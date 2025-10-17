@@ -1,5 +1,5 @@
 import sys
-import requests
+from curl_cffi import requests
 import random
 import time
 import json
@@ -226,11 +226,7 @@ def write_car_to_db(internal_car: car, db: CarDB):
             
 
 def get_listings(start_url, db):
-    HEADERS = {
-        'User-Agent': random.choice(config.user_agents)
-    }
-    
-    log.info(f'scraper::get_listings: User-Agent [{config.user_agent}] URL [{start_url}] timeout [{config.request_timeout}]')
+    log.info(f'scraper::get_listings: HEADERS [{HEADERS}] URL [{start_url}] timeout [{config.request_timeout}]')
 
     all_cars = []
     page_count = 0
@@ -243,7 +239,7 @@ def get_listings(start_url, db):
         log.info(f'scraper::get_listings: Fetching page [{page_count}] current_url [{current_url}]')
 
         try:
-            response = requests.get(current_url, headers=HEADERS, timeout=config.request_timeout)
+            response = requests.get(current_url, impersonate='safari18_4', timeout=config.request_timeout)
             response.raise_for_status()
         
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -303,12 +299,8 @@ def process_listing_details(car_data: json, db: CarDB):
             log.info(f'scraper::process_listing_details: unchanged car at url [{car_url}] skipping')
     else:
         # get the full listing
-        HEADERS = {
-            'User-Agent': config.user_agent
-        }
-
         random_sleep()
-        response = requests.get(car_url, headers=HEADERS, timeout=config.request_timeout)
+        response = requests.get(car_url, impersonate='safari18_4', timeout=config.request_timeout)
         response.raise_for_status()
         
         soup = BeautifulSoup(response.content, 'html.parser')
