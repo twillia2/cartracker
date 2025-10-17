@@ -24,7 +24,7 @@ def run():
     for car in scraper.get_listings(config.search_url, db):
         count += 1
 
-    log.info(f'main::run(): "Found [{count}] cars today. Finished"')
+    log.info(f'main::run(): Found [{count}] cars today. Finished')
     sys.exit(0)
 
 if __name__ == '__main__':

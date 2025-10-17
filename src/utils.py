@@ -23,7 +23,7 @@ def log_price_history(price_history: json):
     for record in price_history:
         ret += " "
         if 'price' in record:
-            ret += f"price: [{record['price']}]"
+            ret += f" [{record['price']}]"
         if 'date' in record:
             ret += f" at [{record['date']}]"
     

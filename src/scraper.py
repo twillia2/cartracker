@@ -220,7 +220,9 @@ def write_car_to_db(internal_car: car, db: CarDB):
         log.info(f'main::run: New listing! VIN [{internal_car['vin']}] price [{internal_car['current_price']}] dealer [{internal_car['dealer']}]')
         
     elif result.value == UpdateResult.PRICE_CHANGE.value:
-        log.info(f'main::run: Price change! VIN [{internal_car['vin']}] price [{internal_car['current_price']}] price history [{utils.log_price_history(internal_car['price_history'])}] dealer [{internal_car['dealer']}]')
+        # need to read the old prices from the db, not this new internal_car object that only has today's price
+        ph = db.get_price_history_for_vin(internal_car['vin'])
+        log.info(f'main::run: Price change! VIN [{internal_car['vin']}] price [{internal_car['current_price']}] price history [{utils.log_price_history(ph)}] dealer [{internal_car['dealer']}]')
             
 
 def get_listings(start_url, db):

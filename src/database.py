@@ -48,6 +48,9 @@ class CarDB:
         Car = Query()
         return self.cars.get(Car.vin == vin)
     
+    def get_price_history_for_vin(self, vin):
+        return self.get_by_vin(vin)['price_history']
+    
     def get_by_url(self, url):
         Car = Query()
         return self.cars.get(Car.url == url)

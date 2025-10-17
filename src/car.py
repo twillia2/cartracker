@@ -27,8 +27,15 @@ def extract_dealer_info(car_data):
         'address': seller.get('address', '').strip() if seller.get('address') else None
     }
 
+#def update_car_record(new_car_data: json, old_car_data: json):
+    # update anything that's changed (most likely price but let's handle anything)
+    # however we need to avoid updating the 'first_seen' value 
+    #for k, v in new_car_data:
+    #    if k in old_car_data:
+    #        k[v] = new_car_data[k].value
+
 def create_car_record(car_data: json):
-    log.info(f'car::create_car_record: vin [{car_data.get('vehicleIdentificationNumber')}]')
+    log.debug(f'car::create_car_record: vin [{car_data.get('vehicleIdentificationNumber')}]')
     # this accesses the info from the website assuming it follows the Car schema
     # https://schema.org/Car
     # get 2-digit MY and first reg from iso date like '2022-01-01T00:00:00.000Z'
