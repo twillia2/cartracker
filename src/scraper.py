@@ -217,12 +217,12 @@ def write_car_to_db(internal_car: car, db: CarDB):
     log.debug("scraper::write_car_to_db")
     _, result = db.update_car(internal_car)
     if result.value == UpdateResult.NEW_LISTING.value:
-        log.info(f'main::run: New listing! VIN [{internal_car['vin']}] price [{internal_car['current_price']}] dealer [{internal_car['dealer']['name']}]')
+        log.info(f'main::run: New listing! VIN [{internal_car['vin']}] price [{internal_car['current_price']}] dealer [{internal_car['dealer']['name']}] url [{internal_car['url']}]')
         
     elif result.value == UpdateResult.PRICE_CHANGE.value:
         # need to read the old prices from the db, not this new internal_car object that only has today's price
         ph = db.get_price_history_for_vin(internal_car['vin'])
-        log.info(f'main::run: Price change! VIN [{internal_car['vin']}] New price [{internal_car['current_price']}] price history [{utils.log_price_history(ph)}] dealer [{internal_car['dealer']['name']}]')
+        log.info(f'main::run: Price change! VIN [{internal_car['vin']}] New price [{internal_car['current_price']}] price history [{utils.log_price_history(ph)}] dealer [{internal_car['dealer']['name']}] url [{internal_car['url']}]')
             
 
 def get_listings(start_url, db):
