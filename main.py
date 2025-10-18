@@ -20,6 +20,9 @@ def run():
     
     log.info(f'main::run(): "Starting..."')
 
+    if config.force_resync:
+        log.info(f'main::run(): force_resync enabled, will fetch all listings')
+
     count = 0
     for car in scraper.get_listings(config.search_url, db):
         count += 1

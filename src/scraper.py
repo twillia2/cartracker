@@ -1,6 +1,5 @@
 import sys
 from curl_cffi import requests
-import random
 import time
 import json
 import logging
@@ -226,7 +225,7 @@ def write_car_to_db(internal_car: car, db: CarDB):
             
 
 def get_listings(start_url, db):
-    log.info(f'scraper::get_listings: HEADERS [{HEADERS}] URL [{start_url}] timeout [{config.request_timeout}]')
+    log.info(f'scraper::get_listings: URL [{start_url}] timeout [{config.request_timeout}]')
 
     all_cars = []
     page_count = 0
@@ -293,7 +292,7 @@ def process_listing_details(car_data: json, db: CarDB):
     existing_car = db.get_by_url(car_url)
     if existing_car is not None:
         last_price = existing_car['price_history'][-1]['price']
-    if current_price == last_price:
+    if (current_price == last_price) and not config.force_resync:
             # update last seen and skip this car
             car_data['last_seen'] = datetime.now().isoformat()
             log.info(f'scraper::process_listing_details: unchanged car at url [{car_url}] skipping')

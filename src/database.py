@@ -28,13 +28,6 @@ class CarDB:
                 })
                 existing['current_price'] = car_record['current_price']
             
-            # update other stuff that might change
-            # TODO add some audit / timestamps to these
-            existing['mileage'] = car_record['mileage']
-            existing['last_updated'] = datetime.now().isoformat()
-            existing['options'] = car_record['options']
-            existing['raw_options'] = car_record['raw_options']
-            
             # update in database
             self.cars.update(existing, Car.vin == car_record['vin'])
             result = UpdateResult.PRICE_CHANGE if price_changed else UpdateResult.NO_CHANGE

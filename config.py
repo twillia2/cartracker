@@ -58,6 +58,10 @@ class Config:
         return self._config['database']['path']
     
     @property
+    def force_resync(self) -> bool:
+        return self._config['scraper']['force_resync']
+    
+    @property
     def options(self):
         return self._config['options']
     
