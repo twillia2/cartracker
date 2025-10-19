@@ -13,7 +13,14 @@ class CarDB:
     
     def update_car(self, car_record):
         Car = Query()
+        # we have an issue here. we can get a car_record that has most fields (inc vin...) missing due to
+        # being parsed off the listing card, not the full page. if that happens we need to check
+        # if we can get it by url if getting it by vin fails. we could do this check earlier and pass
+        # the correct object here but maybe later
         existing = self.cars.get(Car.vin == car_record['vin'])
+
+        if not existing:
+            existing = self.get_by_url(car_record['url'])
         
         if existing:
             # already exists - update price history if price changed
@@ -27,7 +34,19 @@ class CarDB:
                     'dealer': car_record['dealer']
                 })
                 existing['current_price'] = car_record['current_price']
+
+            if config.force_resync:
+                for key, value in car_record.items():
+                    # don't overwrite price history as it might be empty in the new record
+                    if key == 'price_history':
+                        continue
+                    # and first seen
+                    if key == 'first_seen':
+                        continue
+                    if key in existing:
+                        existing[key] = value
             
+            existing['last_updated'] = car_record['last_updated']
             # update in database
             self.cars.update(existing, Car.vin == car_record['vin'])
             result = UpdateResult.PRICE_CHANGE if price_changed else UpdateResult.NO_CHANGE
