@@ -3,6 +3,7 @@ from pathlib import Path
 from config import Config
 import src.logger as logger
 import src.scraper as scraper
+import src.scraper_selenium as ss
 from src.database import CarDB
 from src.reason import UpdateResult
 
@@ -23,9 +24,7 @@ def run():
     if config.force_resync:
         log.info(f'main::run(): force_resync enabled, will fetch all listings')
 
-    count = 0
-    for car in scraper.get_listings(config.search_url, db):
-        count += 1
+    count = len(ss.get_listings(config.search_url, db))
 
     log.info(f'main::run(): Found [{count}] cars today. Finished')
     sys.exit(0)
