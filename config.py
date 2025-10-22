@@ -38,12 +38,8 @@ class Config:
         return self._config['scraper']['url_prefix']
     
     @property
-    def user_agents(self):
-        return self._config['scraper']['user_agents']
-    
-    @property
-    def user_agent(self):
-        return self._config['scraper']['user_agent']
+    def curl_cffi_impersonate(self):
+        return self._config.get('scraper').get('curl_cffi_impersonate', None)
     
     @property
     def is_random(self) -> bool:

@@ -34,6 +34,8 @@ EQUIPMENT_HIGHLIGHTS_CLASS = '_1oxeqv25'
 PAGINATION_CLASS = 't81jpj5'
 NEXT_PAGE_CLASS = 't81jpj1'
 
+CURL_CFFI_IMPERSONATE = config.curl_cffi_impersonate or 'safari18_4'
+
 def random_sleep():
     if config.is_random:
         delay = utils.random_delay()
@@ -238,7 +240,7 @@ def get_listings(start_url, db):
         log.info(f'scraper::get_listings: Fetching page [{page_count}] current_url [{current_url}]')
 
         try:
-            response = requests.get(current_url, impersonate='safari18_4', timeout=config.request_timeout)
+            response = requests.get(current_url, impersonate=CURL_CFFI_IMPERSONATE, timeout=config.request_timeout)
             response.raise_for_status()
         
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -296,7 +298,7 @@ def process_listing_details(car_data: json, db: CarDB):
     else:
         # get the full listing
         random_sleep()
-        response = requests.get(car_url, impersonate='safari18_4', timeout=config.request_timeout)
+        response = requests.get(car_url, impersonate=CURL_CFFI_IMPERSONATE, timeout=config.request_timeout)
         response.raise_for_status()
         
         soup = BeautifulSoup(response.content, 'html.parser')
