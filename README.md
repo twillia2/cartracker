@@ -28,6 +28,7 @@ scraper
 | curl_cffi_impersonate | string | Specify an 'impersonate' value for `curl_cffi` to use. Defaults to `safari18_4` | See your version of `curl_impersonate` |
 | headless | bool | Allows the scraper to run on a commandline only system (but still requires xorg and chromium etc) | Defaults to `false` | `true`, `false` |
 | force_resync | bool | Re-request, parse and write to db the full details for each listing, even if they appear unchanged. Defaults to `false` | `true`, `false` |
+| chromedriver_path | string | Path to the chromium driver. Optional | /path/to/file |
 
 
 database

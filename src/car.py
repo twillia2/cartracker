@@ -8,7 +8,7 @@ log = logging.getLogger('cartracker')
 def parse_highlights(car_options_highlights):
     if not car_options_highlights:
         # Return all False if no options
-        return {key: False for key in config.specs.keys()}
+        return {key: False for key in config.car_options.keys()}
     
     # Join all options into one lowercase string for matching
     options_text = ' '.join(car_options_highlights).lower()
@@ -16,7 +16,7 @@ def parse_highlights(car_options_highlights):
     # Check each spec keyword
     return {
         key: keyword.lower() in options_text
-        for key, keyword in config.options.items()
+        for key, keyword in config.car_options.items()
     }
 
 def extract_dealer_info(car_data):
