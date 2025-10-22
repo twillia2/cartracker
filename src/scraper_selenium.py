@@ -23,15 +23,28 @@ from src.reason import UpdateResult
 
 log = logging.getLogger('cartracker')
 
+# virtualdisplay for python headless on rpi
+if config.headless:
+    from pyvirtualdisplay import Display
+    display = Display(visible=0, size=(1920, 1080))
+    display.start()
+
+
 options = Options()
 options.add_argument('--disable-blink-features=AutomationControlled')
 options.add_experimental_option("excludeSwitches", ["enable-automation"])
 options.add_experimental_option('useAutomationExtension', False)
 options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--no-sandbox')
-# options.add_argument('--headless')
-driver = webdriver.Chrome(options=options)
+options.add_argument('--headless')
+if config.chromedriver_path:
+    from selenium.webdriver.chrome.service import Service
+    service = Service('/usr/bin/chromedriver')
+    driver = webdriver.Chrome(service=service, options=options)
+else:
+    driver = webdriver.Chrome(options=options)
 driver.set_window_size(1920, 1080)
+
 
 # logic should be:
 # check listing db (keyed on vin)

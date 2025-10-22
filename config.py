@@ -27,7 +27,7 @@ class Config:
     
     @property
     def log_stderr(self) -> bool:
-        return self._config['logger']['stderr']
+        return self._config.get('logger', {}).get('stderr', False)
     
     @property
     def search_url(self):
@@ -62,8 +62,20 @@ class Config:
         return self._config['scraper']['force_resync']
     
     @property
-    def options(self):
-        return self._config['options']
+    def scraper_library(self):
+        return self._config['scraper']['library']
+
+    @property
+    def headless(self) -> bool:
+        return self._config.get('scraper').get('headless', False)
+    
+    @property
+    def chromedriver_path(self):
+        return self._config.get('scraper').get('chromedriver_path', None)
+    
+    @property
+    def car_options(self):
+        return self._config['car_options']
     
 
 config = Config()

@@ -261,9 +261,6 @@ def get_listings(start_url, db):
             else:
                 log.error(f'scraper::get_listings: Failed to get next_url, stopping reads')
                 break
-        except requests.RequestException as e:
-            log.error(f'scraper::get_listings: Error getting url [{current_url}] e [{str(e)}]', exc_info=True)
-            break
         except Exception as e:
             log.error(f'scraper::get_listings: Error processing url [{current_url}] e [{str(e)}]', exc_info=True)
             break

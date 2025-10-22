@@ -1,11 +1,9 @@
 import sys
-from pathlib import Path
 from config import Config
 import src.logger as logger
 import src.scraper as scraper
-import src.scraper_selenium as ss
+import src.scraper_selenium as selenium
 from src.database import CarDB
-from src.reason import UpdateResult
 
 def run():
     config = Config('config.json') #default path is just the config.json here
@@ -24,7 +22,14 @@ def run():
     if config.force_resync:
         log.info(f'main::run(): force_resync enabled, will fetch all listings')
 
-    count = len(ss.get_listings(config.search_url, db))
+    count = 0
+    if config.scraper_library == "selenium":
+        count = len(selenium.get_listings(config.search_url, db))
+    elif config.scraper_library == "curl_cffi":
+        count = len(scraper.get_listings(config.search_url, db))
+    else:
+        log.error(f'main::run() unknown scraper_library value in config [{config.scraper_library}]')
+        sys.exit(1)
 
     log.info(f'main::run(): Found [{count}] cars today. Finished')
     sys.exit(0)
